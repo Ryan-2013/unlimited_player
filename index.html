@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>循环播放音视频文件</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(to bottom right, #cee24a, #f39c12);
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            justify-content: center;
+        }
+
+        .h1_title {
+            font-size: 5vw;
+            text-align: center;
+            color: #FFFFFF;
+            margin-top: 5vw;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .fileInput_container {
+            display: flex;
+            justify-content: center;
+            margin-top: 5vw;
+        }
+
+        .fileInput_class {
+            display: none;
+        }
+
+        .fileInput_button {
+            padding: 1.5em 3em;
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #fff;
+            background-color: #FF6F61;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .fileInput_button:hover {
+            background-color: #FF4F3D;
+            transform: scale(1.05);
+        }
+
+        #playerContainer {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        video, audio {
+            max-width: 90%;
+            height: auto;
+            border-radius: 10px;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        #progressContainer {
+            margin-top: 10px;
+            width: 80%;
+        }
+
+        #progressBar {
+            width: 100%;
+            height: 10px;
+            appearance: none;
+            cursor: pointer;
+        }
+
+        #progressBar::-webkit-progress-bar {
+            background-color: #ddd;
+            border-radius: 5px;
+        }
+
+        #progressBar::-webkit-progress-value {
+            background-color: #FF6F61;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1 class="h1_title">选择音频或视频文件进行循环播放</h1>
+    
+    <div class="fileInput_container">
+        <label for="fileInput" class="fileInput_button">选择音频/视频文件</label>
+        <input type="file" id="fileInput" multiple accept="audio/*,video/*" class="fileInput_class">
+    </div>
+    
+    <div id="playerContainer">
+        <video id="videoPlayer" controls style="display: none;"></video>
+        <audio id="audioPlayer" controls style="display: none;"></audio>
+        <div id="progressContainer" style="display: none;">
+            <input type="range" id="progressBar" min="0" max="1" step="0.01" value="0">
+        </div>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        const videoPlayer = document.getElementById('videoPlayer');
+        const audioPlayer = document.getElementById('audioPlayer');
+        const progressBar = document.getElementById('progressBar');
+        const progressContainer = document.getElementById('progressContainer');
+
+        let files = [];
+        let currentIndex = 0;
+
+        fileInput.addEventListener('change', () => {
+            files = Array.from(fileInput.files);
+            currentIndex = 0;
+            playCurrentFile();
+        });
+
+        function playCurrentFile() {
+            if (files.length === 0) return;
+
+            stopAll();
+
+            const file = files[currentIndex];
+            const url = URL.createObjectURL(file);
+
+            if (file.type.startsWith('video')) {
+                videoPlayer.src = url;
+                videoPlayer.style.display = 'block';
+                audioPlayer.style.display = 'none';
+                progressContainer.style.display = 'block';
+                videoPlayer.play();
+                videoPlayer.onended = playNextFile;
+                videoPlayer.ontimeupdate = updateProgressBar;
+            } else if (file.type.startsWith('audio')) {
+                audioPlayer.src = url;
+                audioPlayer.style.display = 'block';
+                videoPlayer.style.display = 'none';
+                progressContainer.style.display = 'block';
+                audioPlayer.play();
+                audioPlayer.onended = playNextFile;
+                audioPlayer.ontimeupdate = updateProgressBar;
+            }
+        }
+
+        function playNextFile() {
+            currentIndex = (currentIndex + 1) % files.length;
+            playCurrentFile();
+        }
+
+        function stopAll() {
+            videoPlayer.pause();
+            audioPlayer.pause();
+            videoPlayer.currentTime = 0;
+            audioPlayer.currentTime = 0;
+            progressBar.value = 0;
+        }
+
+        function updateProgressBar() {
+            const player = videoPlayer.style.display === 'block' ? videoPlayer : audioPlayer;
+            progressBar.value = player.currentTime / player.duration;
+        }
+
+        progressBar.addEventListener('input', () => {
+            const player = videoPlayer.style.display === 'block' ? videoPlayer : audioPlayer;
+            player.currentTime = progressBar.value * player.duration;
+        });
+    </script>
+</body>
+</html>
